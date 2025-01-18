@@ -6,15 +6,22 @@ public class GeneratorLabirinta : MonoBehaviour
 {
     [SerializeField] cvorLabirinta cvorPrefab;
     [SerializeField] Vector2Int velicinaLabirinta;
+    [SerializeField] GameObject igrac;
+    [SerializeField] GameObject cilj;
+
+    
 
     private void Start()
-    {
-        generirajLabirint(velicinaLabirinta);
+    { 
+        generirajLabirintt(velicinaLabirinta);
+        cvorLabirinta igracCvor = generirajIgraca();
+        generirajCilj(igracCvor);   
     }
     
     
-    void generirajLabirint(Vector2Int size)
+    void generirajLabirintt(Vector2Int size)
     {
+
         List<cvorLabirinta> cvorLista = new List<cvorLabirinta>();
 
         //kreiranje cvora
@@ -28,19 +35,26 @@ public class GeneratorLabirinta : MonoBehaviour
             }
         }
 
+     
+
+
         List<cvorLabirinta> trenutnaPutanja = new List<cvorLabirinta>();
         List<cvorLabirinta> zavrseniCvor = new List<cvorLabirinta>();
 
-
-        //Pocetna tocka
+        //Odabir pocetnog cvora
         trenutnaPutanja.Add(cvorLista[Random.Range(0, cvorLista.Count)]);
+        trenutnaPutanja[0].SetState(NodeState.Current);
 
+        //Glavna petlja
         while (zavrseniCvor.Count < cvorLista.Count)
         {
+
             List<int> moguciCvorovi = new List<int>();
             List<int> moguciSmjer = new List<int>();
-
+            
             int indexCvora = cvorLista.IndexOf(trenutnaPutanja[trenutnaPutanja.Count - 1]);
+           
+
             int cvorX = indexCvora / size.y;
             int cvorY = indexCvora % size.y;
 
@@ -114,13 +128,80 @@ public class GeneratorLabirinta : MonoBehaviour
                 }
 
                 trenutnaPutanja.Add(odabraniCvor);
+                odabraniCvor.SetState(NodeState.Current);
             }
-
+           
             else
             {
                 zavrseniCvor.Add(trenutnaPutanja[trenutnaPutanja.Count - 1]);
+
+                trenutnaPutanja[trenutnaPutanja.Count - 1].SetState(NodeState.Completed);
                 trenutnaPutanja.RemoveAt(trenutnaPutanja.Count - 1);
             }
+            
         }
     }
+
+
+    
+    cvorLabirinta generirajIgraca()
+    {
+        cvorLabirinta nasumicniCvor = nadjiSlobodanCvor();
+
+        if (nasumicniCvor != null)
+        {
+            Instantiate(igrac, nasumicniCvor.transform.position, Quaternion.identity);
+        }
+
+        return nasumicniCvor;
+    }
+
+    void generirajCilj(cvorLabirinta zauzetiCvor) 
+    {
+
+
+        cvorLabirinta nasumicniCvor = nadjiSlobodanCvor(zauzetiCvor);
+
+        if (nasumicniCvor != null)
+        {
+            GameObject instanciraniCilj = Instantiate(cilj, nasumicniCvor.transform.position, Quaternion.identity);
+
+            Renderer ciljRenderer = instanciraniCilj.GetComponent<Renderer>(); ;
+
+            if (ciljRenderer != null)
+            {
+                ciljRenderer.material.color = Color.green;
+            }
+
+            instanciraniCilj.AddComponent<rotacijaCilja>();
+        }
+
+
+
+     
+    }
+
+
+    cvorLabirinta nadjiSlobodanCvor(cvorLabirinta zauzetiCvor = null) 
+    { 
+        List<cvorLabirinta> prazniCvor = new List<cvorLabirinta>();
+
+        foreach (Transform child in transform)
+        {
+            cvorLabirinta cvor = child.GetComponent<cvorLabirinta>();
+            if (cvor != null && !cvor.jeZid && cvor != zauzetiCvor)
+            {
+                prazniCvor.Add(cvor);
+            }
+        }
+
+        if (prazniCvor.Count > 0)
+        {
+            return prazniCvor[Random.Range(0, prazniCvor.Count)];
+        }
+
+        return null;
+    }
+
+    
 }
